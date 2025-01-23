@@ -2,10 +2,10 @@
 //This is just for learning rust
 
 use curl::easy::Easy;
-use serde::Deserialize;
+//use serde::Deserialize;
 use std::{ffi::OsStr, path::Path};
 
-#[derive(Deserialize)]
+//#[derive(Deserialize)]
 struct CarResponse {
     id: String,
     url: String,
@@ -15,15 +15,13 @@ fn main() -> Result<(), curl::Error> {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     let count: u8 = match args.get(0) {
-        Some(c) => {
-            match c.parse() {
-                Ok(n) => n,
-                Err(_) => {
-                    eprintln!("first command isn't number defaulting to 1");
-                    1
-                }
+        Some(c) => match c.parse() {
+            Ok(n) => n,
+            Err(_) => {
+                eprintln!("first command isn't number defaulting to 1");
+                1
             }
-        }
+        },
         None => 1,
     };
     let output: String = match args.get(1) {
@@ -48,17 +46,26 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
     {
         let mut transfer = handle.transfer();
         transfer.write_function(|data| {
-            let response: Result<Vec<CarResponse>, serde_json::Error> =
-                serde_json::from_slice(data);
-
-            match response {
-                Ok(car) => {
-                    cars.extend(car);
-                }
-                Err(e) => {
-                    eprintln!("Error occured while parsing data\n{e}");
+            if let Ok(res) = String::from_utf8(data.to_vec()) {
+                if let Ok(response) = jsonic::parse(&res) {
+                    cars.push(CarResponse {
+                        id: response[0]["id"].as_str().unwrap().to_string(),
+                        url: response[0]["url"].as_str().unwrap().to_string(),
+                    });
                 }
             }
+            //let response = jsonic::parse(&res).unwrap();
+            //let response: Result<Vec<CarResponse>, serde_json::Error> =
+            //    serde_json::from_slice(data);
+
+            //match response {
+            //    Ok(car) => {
+            //        cars.extend(car);
+            //    }
+            //    Err(e) => {
+            //        eprintln!("Error occured while parsing data\n{e}");
+            //    }
+            //}
 
             Ok(data.len())
         })?;
