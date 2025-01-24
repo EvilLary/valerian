@@ -15,7 +15,7 @@ cp ./target/release/valerian $HOME/.local/bin/
 ## Usage
 
 ```bash
-valerian number-of-cars output-directory
+valerian <number-of-cars> <output-directory>
 ```
 
 ```bash

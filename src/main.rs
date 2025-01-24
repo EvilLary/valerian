@@ -54,12 +54,19 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
         let mut transfer = handle.transfer();
         transfer.write_function(|data| {
             if let Ok(res) = String::from_utf8(data.to_vec()) {
-                if let Ok(response) = jsonic::parse(&res) {
-                    cars.push(CarResponse {
-                        id: response[0]["id"].as_str().unwrap().to_string(),
-                        url: response[0]["url"].as_str().unwrap().to_string(),
-                    });
-                }
+                //yeah.. idc
+                let res = &res[2..res.len() - 2];
+                let res: Vec<&str> = res.split(",").collect();
+
+                let id = res[0].split_once(":").unwrap();
+                let id = &id.1[1..id.1.len() - 1];
+                let id = String::from(id);
+
+                let url = res[1].split_once(":").unwrap();
+                let url = &url.1[1..url.1.len() - 1];
+                let url = String::from(url);
+
+                cars.push(CarResponse { id, url });
             }
             Ok(data.len())
         })?;
@@ -80,7 +87,7 @@ fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), cur
 
         let extension = &car.url[car.url.len() - 3..];
         let img_path: String = format!("{}/{}.{}", save_path.display(), car.id, extension);
-        let img_file = match std::fs::File::create_new(&img_path){
+        let img_file = match std::fs::File::create_new(&img_path) {
             Ok(k) => k,
             Err(e) => {
                 eprintln!("Error occured while creating img file\n{e}");
@@ -95,7 +102,7 @@ fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), cur
             let mut transfer = handle.transfer();
             transfer.write_function(|data| {
                 match img_file.write(data) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => {
                         eprintln!("Error occured while saving image\n{e}");
                     }
@@ -110,4 +117,3 @@ fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), cur
     }
     Ok(())
 }
-
