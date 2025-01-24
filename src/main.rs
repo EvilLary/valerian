@@ -2,35 +2,43 @@
 //This is just for learning rust
 
 use curl::easy::Easy;
-//use serde::Deserialize;
-use std::{ffi::OsStr, path::Path};
+use std::{env, io::Write, path::PathBuf};
 
-//#[derive(Deserialize)]
+const API_URL: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg,png,gif&limit=1";
+
 struct CarResponse {
     id: String,
     url: String,
 }
 
-fn main() -> Result<(), curl::Error> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     let count: u8 = match args.get(0) {
         Some(c) => match c.parse() {
             Ok(n) => n,
             Err(_) => {
-                eprintln!("first command isn't number defaulting to 1");
+                eprintln!("first argument isn't a number defaulting to 1");
                 1
             }
         },
         None => 1,
     };
-    let output: String = match args.get(1) {
-        Some(o) => String::from(o),
-        None => String::from("."),
+    let save_path: PathBuf = match args.get(1) {
+        Some(o) => {
+            let path = PathBuf::from(o);
+            if path.is_dir() {
+                path
+            } else {
+                eprint!("{} isn't a directory", path.display());
+                std::process::exit(1);
+            }
+        }
+        None => env::current_dir()?,
     };
 
     let response: Vec<CarResponse> = get_cars(count)?;
-    download_cars(&response, &output)?;
+    download_cars(&response, &save_path)?;
     Ok(())
 }
 
@@ -40,9 +48,8 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
         cars.reserve_exact(usize::from(count) - 1);
     }
 
-    let url: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg,png&limit=1";
     let mut handle = Easy::new();
-    handle.url(&url)?;
+    handle.url(API_URL)?;
     {
         let mut transfer = handle.transfer();
         transfer.write_function(|data| {
@@ -54,19 +61,6 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
                     });
                 }
             }
-            //let response = jsonic::parse(&res).unwrap();
-            //let response: Result<Vec<CarResponse>, serde_json::Error> =
-            //    serde_json::from_slice(data);
-
-            //match response {
-            //    Ok(car) => {
-            //        cars.extend(car);
-            //    }
-            //    Err(e) => {
-            //        eprintln!("Error occured while parsing data\n{e}");
-            //    }
-            //}
-
             Ok(data.len())
         })?;
 
@@ -78,37 +72,42 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
     Ok(cars)
 }
 
-fn download_cars(cars: &Vec<CarResponse>, save_path: &str) -> Result<(), curl::Error> {
-    //TODO make it async
+fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), curl::Error> {
+    //TODO make it async?
+    let mut handle = Easy::new();
     for car in cars {
-        println!("downloading {} from {}", car.id, car.url);
-        if let Some(extension) = Path::new(&car.url).extension().and_then(OsStr::to_str) {
-            let mut img = Vec::new();
-            let img_path: String = format!("{}/{}.{}", save_path, car.id, extension);
+        println!("downloading {} from: {}", car.id, car.url);
 
-            let mut handle = Easy::new();
-            handle.url(&car.url)?;
-
-            {
-                let mut transfer = handle.transfer();
-                transfer.write_function(|data| {
-                    img.extend_from_slice(data);
-                    Ok(data.len())
-                })?;
-
-                transfer.perform()?;
+        let extension = &car.url[car.url.len() - 3..];
+        let img_path: String = format!("{}/{}.{}", save_path.display(), car.id, extension);
+        let img_file = match std::fs::File::create_new(&img_path){
+            Ok(k) => k,
+            Err(e) => {
+                eprintln!("Error occured while creating img file\n{e}");
+                continue;
             }
+        };
+        //TODO: maybe use with_capcity ?
+        let mut img_file = std::io::BufWriter::new(&img_file);
 
-            match std::fs::write(&img_path, &img) {
-                Ok(_) => {
-                    println!("car saved to {}", img_path);
+        handle.url(&car.url)?;
+        {
+            let mut transfer = handle.transfer();
+            transfer.write_function(|data| {
+                match img_file.write(data) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        eprintln!("Error occured while saving image\n{e}");
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Error occured while saving image\n{e}");
-                    continue;
-                }
-            }
+                Ok(data.len())
+            })?;
+
+            transfer.perform()?;
         }
+
+        println!("car saved to {}", img_path);
     }
     Ok(())
 }
+
