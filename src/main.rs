@@ -28,10 +28,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         None => 1,
     };
+
     let save_path: &Path = match args.get(1) {
         Some(o) => {
             let path = Path::new(o);
+
             if path.is_dir() {
+                if !path.metadata()?.permissions().readonly() {
+                    eprint!("Don't have write access to {}", path.display());
+                    std::process::exit(1);
+                }
+
                 path
             } else {
                 eprint!("{} isn't a directory", path.display());
