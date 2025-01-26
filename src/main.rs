@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let path = Path::new(o);
 
             if path.is_dir() {
-                if !path.metadata()?.permissions().readonly() {
+                if path.metadata()?.permissions().readonly() {
                     eprint!("Don't have write access to {}", path.display());
                     std::process::exit(1);
                 }
