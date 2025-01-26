@@ -2,7 +2,11 @@
 //This is just for learning rust
 
 use curl::easy::Easy;
-use std::{env, io::Write, path::PathBuf};
+use std::{
+    env,
+    io::{self, Write},
+    path::Path,
+};
 
 const API_URL: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg,png,gif&limit=1";
 
@@ -12,9 +16,9 @@ struct CarResponse {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    let args: Vec<String> = env::args().skip(1).collect();
 
-    let count: u8 = match args.get(0) {
+    let count: u8 = match args.first() {
         Some(c) => match c.parse() {
             Ok(n) => n,
             Err(_) => {
@@ -24,9 +28,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         None => 1,
     };
-    let save_path: PathBuf = match args.get(1) {
+    let save_path: &Path = match args.get(1) {
         Some(o) => {
-            let path = PathBuf::from(o);
+            let path = Path::new(o);
             if path.is_dir() {
                 path
             } else {
@@ -34,11 +38,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::process::exit(1);
             }
         }
-        None => env::current_dir()?,
+        None => &env::current_dir()?,
     };
 
     let response: Vec<CarResponse> = get_cars(count)?;
-    download_cars(&response, &save_path)?;
+    download_cars(&response, save_path)?;
     Ok(())
 }
 
@@ -79,7 +83,7 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
     Ok(cars)
 }
 
-fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), curl::Error> {
+fn download_cars(cars: &Vec<CarResponse>, save_path: &Path) -> Result<(), curl::Error> {
     //TODO make it async?
     let mut handle = Easy::new();
     for car in cars {
@@ -95,7 +99,7 @@ fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), cur
             }
         };
         //TODO: maybe use with_capcity ?
-        let mut img_file = std::io::BufWriter::new(&img_file);
+        let mut img_file = io::BufWriter::new(&img_file);
 
         handle.url(&car.url)?;
         {
@@ -112,7 +116,7 @@ fn download_cars(cars: &Vec<CarResponse>, save_path: &PathBuf) -> Result<(), cur
 
             transfer.perform()?;
         }
-
+        //TODO: This seems kinda stupid? it'll print out this message even if image saving wasn't successful
         println!("car saved to {}", img_path);
     }
     Ok(())

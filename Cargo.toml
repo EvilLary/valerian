@@ -5,3 +5,10 @@ edition = "2021"
 
 [dependencies]
 curl = "0.4.47"
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = false
+debug = false
+panic = "abort"
