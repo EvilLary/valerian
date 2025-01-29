@@ -3,53 +3,31 @@
 
 use curl::easy::Easy;
 use std::{
-    env,
     io::{self, Write},
-    path::Path,
+    path::PathBuf,
 };
-
-const API_URL: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg,png,gif&limit=1";
+use valerian::*;
 
 struct CarResponse {
     id: String,
     url: String,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().skip(1).collect();
+fn main() -> Result<(), curl::Error> {
+    //let (count, save_path) = valerian::parse_args();
 
-    let count: u8 = match args.first() {
-        Some(c) => match c.parse() {
-            Ok(n) => n,
-            Err(_) => {
-                eprintln!("first argument isn't a number defaulting to 1");
-                1
-            }
-        },
-        None => 1,
-    };
+    let args = CmdArgs::get();
+    if args.help {
+        println!("{HELP_MSG}");
+        return Ok(());
+    }
+    let response = get_cars(args.count)?;
 
-    let save_path: &Path = match args.get(1) {
-        Some(o) => {
-            let path = Path::new(o);
+    if let Err(e) = download_cars(&response, &args.output) {
+        eprintln!("Error occured while download cars: {e}");
+        std::process::exit(1);
+    }
 
-            if path.is_dir() {
-                if path.metadata()?.permissions().readonly() {
-                    eprint!("Don't have write access to {}", path.display());
-                    std::process::exit(1);
-                }
-
-                path
-            } else {
-                eprint!("{} isn't a directory", path.display());
-                std::process::exit(1);
-            }
-        }
-        None => &env::current_dir()?,
-    };
-
-    let response: Vec<CarResponse> = get_cars(count)?;
-    download_cars(&response, save_path)?;
     Ok(())
 }
 
@@ -90,7 +68,7 @@ fn get_cars(count: u8) -> Result<Vec<CarResponse>, curl::Error> {
     Ok(cars)
 }
 
-fn download_cars(cars: &Vec<CarResponse>, save_path: &Path) -> Result<(), curl::Error> {
+fn download_cars(cars: &[CarResponse], save_path: &PathBuf) -> Result<(), curl::Error> {
     //TODO make it async?
     let mut handle = Easy::new();
     for car in cars {
