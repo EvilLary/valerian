@@ -7,27 +7,26 @@ pub struct CarResponse {
     pub id: String,
     pub url: String,
 }
+
 pub struct CmdArgs {
     pub count: u8,
     pub output: PathBuf,
     pub help: bool,
 }
 
-pub enum ValResult<T> {
-    Ok(T),
-    Err(ValError),
-}
-
+#[derive(Debug)]
 pub enum ValError {
     InvalidArgumnet,
-    LitteArgs,
+    InsufficientArguments(String),
     ReadOnlyAccess,
     NotADirectory,
     InvalidOption(String),
+    IoError(std::io::Error),
+    CurlError(curl::Error),
 }
 
 impl CmdArgs {
-    pub fn get() -> ValResult<Self> {
+    pub fn get() -> Result<Self, ValError> {
         let mut count = 1;
         let mut output = env::current_dir().unwrap();
         let mut help: bool = false;
@@ -40,11 +39,13 @@ impl CmdArgs {
                         match c.parse::<u8>() {
                             Ok(k) => count = k,
                             Err(_e) => {
-                                return ValResult::Err(ValError::InvalidArgumnet);
+                                return Err(ValError::InvalidArgumnet);
                             }
                         }
                     } else {
-                        return ValResult::Err(ValError::LitteArgs);
+                        return Err(ValError::InsufficientArguments(String::from(
+                            "-c Must be provided with a number",
+                        )));
                     }
                 }
                 "-o" => {
@@ -53,26 +54,26 @@ impl CmdArgs {
 
                         if path.is_dir() {
                             // this stupid function is so unreliable it's insane
-                            //println!("{:?}",path.metadata().unwrap().permissions().readonly());
-                            //
                             //if !path.metadata().unwrap().permissions().readonly() {
                             //    println!("fdf");
                             //    return ValResult::Err(ValError::ReadOnlyAccess);
                             //}
                             output = path;
                         } else {
-                            return ValResult::Err(ValError::NotADirectory);
+                            return Err(ValError::NotADirectory);
                         }
                     } else {
-                        return ValResult::Err(ValError::LitteArgs);
+                        return Err(ValError::InsufficientArguments(String::from(
+                            "-o must be provided with a directory",
+                        )));
                     }
                 }
                 "-h" => help = true,
-                _ => return ValResult::Err(ValError::InvalidOption(item)),
+                _ => return Err(ValError::InvalidOption(item)),
             }
         }
 
-        ValResult::Ok(Self {
+        Ok(Self {
             count,
             output,
             help,
