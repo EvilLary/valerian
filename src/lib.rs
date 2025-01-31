@@ -19,7 +19,7 @@ impl fmt::Debug for ValError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use ValError as E;
         match self {
-            E::InvalidArgumnet => write!(f, "Invalid arguments passed in \nsee{CYAN}{BOLD}valerian -h{RESET} for help")?,
+            E::InvalidArgumnet => write!(f, "Invalid arguments passed in \n{CYAN}{BOLD}valerian -h{RESET} for help")?,
             E::InsufficientArguments(o) => {
                 write!(f, "{RED}{BOLD}{o}{RESET}\n{CYAN}{BOLD}valerian -h{RESET} for help")?
             }
