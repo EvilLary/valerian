@@ -5,7 +5,7 @@ const API_URL: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg
 use curl::easy::Easy;
 use std::{
     io::{self, Write},
-    path::PathBuf,
+    path::Path,
 };
 
 pub struct CarResponse {
@@ -20,7 +20,7 @@ pub fn get_cars(count: u8) -> Result<Vec<CarResponse>, ValError> {
     }
 
     let mut handle = Easy::new();
-    handle.url(API_URL).map_err(|e| ValError::CurlError(e))?;
+    handle.url(API_URL).map_err(ValError::CurlError)?;
     {
         let mut transfer = handle.transfer();
         transfer
@@ -42,19 +42,18 @@ pub fn get_cars(count: u8) -> Result<Vec<CarResponse>, ValError> {
                 }
                 Ok(data.len())
             })
-            .map_err(|e| ValError::CurlError(e))?;
+            .map_err(ValError::CurlError)?;
 
         let mut stdout = std::io::stdout().lock();
         for i in 1..=count {
-            writeln!(stdout, "{CYAN}fetching {i}th car{RESET}")
-                .map_err(|e| ValError::IoError(e))?;
-            transfer.perform().map_err(|e| ValError::CurlError(e))?;
+            writeln!(stdout, "{CYAN}fetching {i}th car{RESET}").map_err(ValError::IoError)?;
+            transfer.perform().map_err(ValError::CurlError)?;
         }
     }
     Ok(cars)
 }
 
-pub fn download_cars(cars: &[CarResponse], save_path: &PathBuf) -> Result<(), ValError> {
+pub fn download_cars(cars: &[CarResponse], save_path: &Path) -> Result<(), ValError> {
     //TODO make it async?
     let mut handle = Easy::new();
     let mut stdout = std::io::stdout().lock();
@@ -64,15 +63,16 @@ pub fn download_cars(cars: &[CarResponse], save_path: &PathBuf) -> Result<(), Va
             "downloading {} from: {BOLD}{BLUE}{}{RESET}",
             car.id, car.url
         )
-        .map_err(|e| ValError::IoError(e))?;
+        .map_err(ValError::IoError)?;
 
         let extension = &car.url[car.url.len() - 3..];
         let img_path: String = format!("{}/{}.{}", save_path.display(), car.id, extension);
-        let img_file = std::fs::File::create_new(&img_path).map_err(|e| ValError::IoError(e))?;
+        let img_file = std::fs::File::create_new(&img_path).map_err(ValError::IoError)?;
+
         //TODO: maybe use with_capcity ?
         let mut img_file = io::BufWriter::new(&img_file);
 
-        handle.url(&car.url).map_err(|e| ValError::CurlError(e))?;
+        handle.url(&car.url).map_err(ValError::CurlError)?;
         {
             let mut transfer = handle.transfer();
             transfer
@@ -85,13 +85,13 @@ pub fn download_cars(cars: &[CarResponse], save_path: &PathBuf) -> Result<(), Va
                     }
                     Ok(data.len())
                 })
-                .map_err(|e| ValError::CurlError(e))?;
+                .map_err(ValError::CurlError)?;
 
-            transfer.perform().map_err(|e| ValError::CurlError(e))?;
+            transfer.perform().map_err(ValError::CurlError)?;
         }
         //TODO: This seems kinda stupid? it'll print out this message even if image saving wasn't successful
         writeln!(stdout, "{BLUE}car saved to {BOLD}{GREEN}{img_path}{RESET}")
-            .map_err(|e| ValError::IoError(e))?;
+            .map_err(ValError::IoError)?;
     }
     Ok(())
 }

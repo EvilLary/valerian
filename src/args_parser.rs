@@ -11,7 +11,8 @@ pub struct CmdArgs {
 impl CmdArgs {
     pub fn get() -> Result<Self, ValError> {
         let mut count = 1;
-        let mut output = env::current_dir().map_err(|e| ValError::IoError(e))?;
+        let mut output = env::current_dir().map_err(ValError::IoError)?;
+
         let mut help: bool = false;
         let mut args = env::args().skip(1);
 

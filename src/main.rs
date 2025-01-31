@@ -4,8 +4,8 @@
 use std::io::Write;
 use valerian::{
     api,
-    colors::{CYAN, GREEN, RESET},
     args_parser::CmdArgs,
+    colors::{CYAN, GREEN, RESET},
     ValError,
 };
 
@@ -38,6 +38,6 @@ fn help_msg() -> Result<(), ValError> {
     std::io::stdout()
         .lock()
         .write_all(format!("{}\n", msg).as_bytes())
-        .map_err(|e| ValError::IoError(e))?;
+        .map_err(ValError::IoError)?;
     Ok(())
 }
