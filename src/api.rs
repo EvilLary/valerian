@@ -60,7 +60,7 @@ pub fn download_cars(cars: &[CarResponse], save_path: &Path) -> Result<(), ValEr
     for car in cars {
         writeln!(
             stdout,
-            "downloading {} from: {BOLD}{BLUE}{}{RESET}",
+            "downloading {} from: {BLUE}{}{RESET}",
             car.id, car.url
         )
         .map_err(ValError::IoError)?;
@@ -90,7 +90,7 @@ pub fn download_cars(cars: &[CarResponse], save_path: &Path) -> Result<(), ValEr
             transfer.perform().map_err(ValError::CurlError)?;
         }
         //TODO: This seems kinda stupid? it'll print out this message even if image saving wasn't successful
-        writeln!(stdout, "{BLUE}car saved to {BOLD}{GREEN}{img_path}{RESET}")
+        writeln!(stdout, "car saved to {BOLD}{GREEN}{img_path}{RESET}")
             .map_err(ValError::IoError)?;
     }
     Ok(())
