@@ -1,7 +1,7 @@
+use crate::colors::*;
 use crate::ValError;
 use std::env;
 use std::path::PathBuf;
-use crate::colors::*;
 
 pub struct CmdArgs {
     pub count: u8,
@@ -93,10 +93,10 @@ const HELP_MSG: &str = "Small app to fetch cat pics from TheCatAPI
 
 \x1b[92m\x1b[1mFLAGS:\x1b[0m
    \x1b[1m\x1b[96m-h  | --help\x1b[0m               prints help information
-   \x1b[1m\x1b[96m-bl | --breed-list\x1b[0m        prints breeds ids
+   \x1b[1m\x1b[96m-bl | --breed-list\x1b[0m         prints breeds ids
 
 \x1b[92m\x1b[1mOPTIONS:\x1b[0m
 
-    \x1b[96m\x1b[1m-b | --breed\x1b[0m        breed id to fetch, see valerian -bl | --breed-list for all breed ids [default: Anything]
+    \x1b[96m\x1b[1m-b | --breed\x1b[0m        specify breed to fetch [default: None]
     \x1b[96m\x1b[1m-c | --count\x1b[0m        number of cats to fetch and download [default: 1]
-    \x1b[96m\x1b[1m-o | --output\x1b[0m       output directory [default: current working directory]\n";
+    \x1b[96m\x1b[1m-o | --output\x1b[0m       output directory [default: current working directory]";

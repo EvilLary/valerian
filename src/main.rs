@@ -3,7 +3,6 @@
 
 use valerian::{api, args_parser::CmdArgs, ValError};
 
-#[rustfmt::skip]
 fn main() -> Result<(), ValError> {
     let args = CmdArgs::get()?;
 

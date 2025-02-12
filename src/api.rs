@@ -78,7 +78,10 @@ pub fn download_cars(cars: &[CarResponse], save_path: &Path) -> Result<(), ValEr
     let mut handle = Easy::new();
 
     for car in cars {
-        println!("{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}", car.id, car.url);
+        println!(
+            "{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}",
+            car.id, car.url
+        );
 
         let img_path = car.find_home(save_path);
         let img_file = match File::create_new(&img_path) {
