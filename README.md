@@ -1,4 +1,4 @@
-# Valerian (ناردين)
+<h1 align="center"> Valerian (ناردين) </h1>
 <h4 align="center"> simple program to fetch cars from [TheCatAPI](https://thecatapi.com/) - بريمج صغير لجلب صور قطط</h4>
 <h4 align="center"> It's a [ccat copycat](https://github.com/plastic-bottleneck/ccat) but way slower and more bloated :) &nbsp;<span dir="rtl">نفس ccat لكن ابطأ وأكبر</span> </h4>
 
@@ -8,28 +8,50 @@
 
 
 
-```bash
-git clone https://codeberg.org/EvilLary/Valerian.git
-cd Valerian
-```
+
 <h4 align="center"> On Arch and its derivatives - على ارش وأبنائه</h4>
 
+1. create a temp directory - انشأ ملف للبناء
+
+```bash
+mkdir temp-build && cd temp-build
+```
+2. Download PKGBUILD script - حمل سكربت
+- With curl - مع كيرل
+```bash
+curl https://codeberg.org/EvilLary/valerian/raw/branch/main/PKGBUILD > PKGBUILD
+```
+- Or wget - مع وجيت
+```bash
+wget https://codeberg.org/EvilLary/valerian/raw/branch/main/PKGBUILD
+```
+
+3. Build and install - ابني وثبت
 ```bash
 makepkg -si
 ```
+
 <h4 align="center"> Manually build it - ابنيه يدوي</h4>
 
 ```bash
+git clone https://codeberg.org/EvilLary/Valerian.git
+```
+```bash
+cd Valerian
+```
+```bash
 cargo build --release
+```
+```bash
 cp ./target/release/valerian $HOME/.local/bin/
 ```
 
 <h2 align="center"> <span dir="ltr">Usage</span>&nbsp;<span dir="rtl">استعمال</span> </h2>
 
+
 ```bash
 valerian -c <number-of-cars> -o <output-directory>
 ```
-
 ```bash
 valerian -c 3 -o $HOME/Downloads/
 ```
