@@ -42,10 +42,7 @@ impl CarResponse {
 }
 
 pub fn get_cars(count: u8, breed: Option<String>) -> Result<Vec<CarResponse>, ValError> {
-    let mut cars: Vec<CarResponse> = Vec::new();
-    if count > 1 {
-        cars.reserve_exact(usize::from(count) - 1);
-    }
+    let mut cars: Vec<CarResponse> = Vec::with_capacity(usize::from(count));
 
     let mut handle = Easy::new();
     if let Some(breed_id) = breed {
@@ -74,33 +71,39 @@ pub fn get_cars(count: u8, breed: Option<String>) -> Result<Vec<CarResponse>, Va
     Ok(cars)
 }
 
-pub fn download_cars(cars: &[CarResponse], save_path: &Path) -> Result<(), ValError> {
-    let mut handle = Easy::new();
+pub fn download_cars(cars: Vec<CarResponse>, save_path: &Path) -> Result<(), ValError> {
+    //use std::sync::Arc
 
-    for car in cars {
-        println!(
-            "{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}",
-            car.id, car.url
-        );
+    use std::thread;
+    thread::scope(|scope| {
+        for car in cars {
+            scope.spawn(move || {
+                let mut handle = Easy::new();
+                println!(
+                    "{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}",
+                    car.id, car.url
+                );
 
-        let img_path = car.find_home(save_path);
-        let img_file = match File::create_new(&img_path) {
-            Ok(f) => f,
-            Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
-                panic!("{BOLD}{RED}ERROR{RESET}: No permissions to specified save path")
-            }
-            Err(e) => {
-                eprintln!("{BOLD}{RED}ERROR{RESET}: faild to create image file:  {e}");
-                continue;
-            }
-        };
-        let mut img_file = io::BufWriter::new(&img_file);
+                let img_path = car.find_home(save_path);
+                let img_file = match File::create_new(&img_path) {
+                    Ok(f) => f,
+                    Err(e) if e.kind() == io::ErrorKind::PermissionDenied => {
+                        panic!("{BOLD}{RED}ERROR{RESET}: No permissions to specified save path")
+                    }
+                    Err(e) => {
+                        eprintln!("{BOLD}{RED}ERROR{RESET}: faild to create image file:  {e}");
+                        panic!("fdl");
+                    }
+                };
+                let mut img_file = io::BufWriter::new(&img_file);
 
-        handle.url(&car.url).map_err(ValError::CurlError)?;
-        dw_curl(&mut handle, &mut img_file)?;
+                handle.url(&car.url).map_err(ValError::CurlError).unwrap();
+                dw_curl(&mut handle, &mut img_file).unwrap();
 
-        println!("{BOLD}{GREEN}INFO{RESET}: car saved to {BOLD}{GREEN}{img_path}{RESET}");
-    }
+                println!("{BOLD}{GREEN}INFO{RESET}: car saved to {BOLD}{GREEN}{img_path}{RESET}");
+            });
+        }
+    });
     Ok(())
 }
 

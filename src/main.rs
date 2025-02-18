@@ -7,5 +7,5 @@ fn main() -> Result<(), ValError> {
     let args = CmdArgs::get()?;
 
     let response = api::get_cars(args.count, args.breed)?;
-    api::download_cars(&response, &args.output)
+    api::download_cars(response, &args.output)
 }
