@@ -1,7 +1,7 @@
 use colors::{BOLD, CYAN, RED, RESET};
 use std::fmt;
 
-pub mod api;
+pub mod car;
 pub mod args_parser;
 pub mod colors;
 
