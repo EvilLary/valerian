@@ -1,6 +1,6 @@
 pkgname="valerian-git"
 _pkgname="valerian"
-pkgver=0.1.25ab90e
+pkgver=0.1.c59cccf
 pkgrel=1
 pkgdesc="simple app to fetch cars from the internet"
 arch=(any)

@@ -1,4 +1,4 @@
-use crate::{colors::*, ValError};
+use crate::{colors::*, ValResult};
 use curl::easy::Easy;
 use std::{
     fs::File,
@@ -9,36 +9,34 @@ use std::{
 const API_URL: &str = "https://api.thecatapi.com/v1/images/search?mime_types=jpg,png,gif&limit=1";
 const BREED_URL: &str = "https://api.thecatapi.com/v1/images/search?breed_ids=";
 
-pub struct CarResponse {
-    id: String,
+pub struct Car {
+    pub id: String,
     url: String,
 }
 
-impl CarResponse {
-    pub fn get_cars(count: u8, breed: Option<String>) -> Result<Vec<CarResponse>, ValError> {
-        let mut cars: Vec<CarResponse> = Vec::with_capacity(usize::from(count));
+impl Car {
+    pub fn get_cars(count: u8, breed: Option<&str>) -> ValResult<Vec<Self>> {
+        let mut cars: Vec<Car> = Vec::with_capacity(usize::from(count));
 
         let mut handle = Easy::new();
         if let Some(breed_id) = breed {
             let breed_url = format!("{BREED_URL}{breed_id}");
-            handle.url(&breed_url).map_err(ValError::CurlError)?;
+            handle.url(&breed_url)?;
         } else {
-            handle.url(API_URL).map_err(ValError::CurlError)?;
+            handle.url(API_URL)?;
         }
         {
             let mut transfer = handle.transfer();
-            transfer
-                .write_function(|data| {
-                    if let Some(car) = CarResponse::from_slice(data) {
-                        cars.push(car);
-                    }
-                    Ok(data.len())
-                })
-                .map_err(ValError::CurlError)?;
+            transfer.write_function(|data| {
+                if let Some(car) = Car::from_slice(data) {
+                    cars.push(car);
+                }
+                Ok(data.len())
+            })?;
 
             for i in 1..=count {
                 println!("{BOLD}{GREEN}INFO{RESET}: fetching {i}th car");
-                transfer.perform().map_err(ValError::CurlError)?;
+                transfer.perform()?;
             }
         }
         Ok(cars)
@@ -67,40 +65,28 @@ impl CarResponse {
         format!("{}/{}.{}", save_path.display(), self.id, extension)
     }
 
-    pub fn download(&self, save_path: &Path) {
+    pub fn download(&self, save_path: &Path) -> ValResult<()> {
         let img_path = self.find_home(save_path);
-        let img_file = File::create_new(&img_path);
-        if let Ok(img) = img_file {
+        let img_file = File::create_new(&img_path)?;
+        let mut img_file = io::BufWriter::new(&img_file);
+        let mut handle = Easy::new();
+        handle.url(&self.url).unwrap();
 
-            let mut img_file = io::BufWriter::new(&img);
-            let mut handle = Easy::new();
-            handle.url(&self.url).unwrap();
-
-            println!(
-                "{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}",
-                self.id, self.url
-            );
-            {
-                let mut transfer = handle.transfer();
-                transfer
-                    .write_function(|data| {
-                        if let Err(e) = img_file.write(data) {
-                            eprintln!("{RED}Error occured while saving image{RESET}\n{e}");
-                        }
-                        Ok(data.len())
-                    })
-                    .unwrap_or_else(|e| {
-                        eprintln!("{RED}{BOLD}Error{RESET}: {e}");
-                        std::process::exit(1);
-                    });
-                transfer.perform().unwrap_or_else(|e| {
-                    eprintln!("{RED}{BOLD}Error{RESET}: {e}");
-                    std::process::exit(1);
-                })
-            }
-            println!("{BOLD}{GREEN}INFO{RESET}: car saved to {BOLD}{GREEN}{img_path}{RESET}");
-        } else {
-            println!("{BOLD}{RED}ERROR{RESET}: Error occured while creating img file");
+        println!(
+            "{BOLD}{GREEN}INFO{RESET}: downloading {} from: {BLUE}{}{RESET}",
+            self.id, self.url
+        );
+        {
+            let mut transfer = handle.transfer();
+            transfer.write_function(|data| {
+                if let Err(e) = img_file.write(data) {
+                    eprintln!("{BOLD}{GREEN}INFO{RESET}: error saving saving image {e}");
+                }
+                Ok(data.len())
+            })?;
+            transfer.perform()?;
         }
+        println!("{BOLD}{GREEN}INFO{RESET}: car saved to {BOLD}{GREEN}{img_path}{RESET}");
+        Ok(())
     }
 }

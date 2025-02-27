@@ -1,32 +1,34 @@
 use crate::colors::*;
 use crate::ValError;
+use crate::ValResult;
 use std::env;
 use std::path::PathBuf;
 
 pub struct CmdArgs {
     pub count: u8,
     pub output: PathBuf,
-    pub breed: Option<String>,
+    pub breed: Option<&'static str>,
 }
 
 impl CmdArgs {
-    pub fn get() -> Result<Self, ValError> {
-        let mut count = 1;
-        let mut output = env::current_dir().map_err(ValError::IoError)?;
+    pub fn get() -> ValResult<Self> {
+        let mut count = None;
+        let mut output = env::current_dir()?;
         let mut args = env::args().skip(1);
-        let mut breed: Option<String> = None;
+        let mut breed: Option<&str> = None;
 
         while let Some(item) = args.next() {
             match item.as_str() {
                 "-c" | "--count" => {
                     if let Some(c) = args.next() {
-                        count = c.parse::<u8>().map_err(|_| {
-                            ValError::InvalidArgumnet("Invalid number provided".into())
-                        })?;
+                        count =
+                            Some(c.parse::<u8>().map_err(|_| {
+                                ValError::InvalidArgumnet("Invalid number provided")
+                            })?);
                     } else {
-                        return Err(ValError::InsufficientArguments(String::from(
+                        return Err(ValError::InsufficientArguments(
                             "-c Must be provided with a number",
-                        )));
+                        ));
                     }
                 }
                 "-o" | "--output" => {
@@ -39,22 +41,22 @@ impl CmdArgs {
                             return Err(ValError::NotADirectory);
                         }
                     } else {
-                        return Err(ValError::InsufficientArguments(String::from(
+                        return Err(ValError::InsufficientArguments(
                             "-o must be provided with a directory",
-                        )));
+                        ));
                     }
                 }
                 "-b" | "--breed" => {
                     if let Some(o) = args.next() {
-                        if BREED_LIST.contains(&&o[..]) {
+                        if let Some(b) = BREED_LIST.iter().find(|a| *a == &o) {
                             println!("{BOLD}{GREEN}INFO{RESET}: {o} breed selected");
-                            breed = Some(o)
+                            breed = Some(b)
                         } else {
-                            return Err(ValError::InvalidArgumnet("Invalid breed id".into()));
+                            return Err(ValError::InvalidArgumnet("Invalid breed id"));
                         }
                     } else {
                         return Err(ValError::InsufficientArguments(
-                            "-b must be provided a breed id".into(),
+                            "-b must be provided a breed id",
                         ));
                     }
                 }
@@ -69,15 +71,19 @@ impl CmdArgs {
                 _ => return Err(ValError::InvalidOption(item)),
             }
         }
-        Ok(Self {
-            breed,
-            count,
-            output,
-        })
+        if let Some(count) = count {
+            Ok(Self {
+                breed,
+                count,
+                output,
+            })
+        } else {
+            Err(ValError::InsufficientArguments("counts must be provided"))
+        }
     }
 }
 
-pub const BREED_LIST: [&str; 67] = [
+const BREED_LIST: [&str; 67] = [
     "abys", "aege", "abob", "acur", "asho", "awir", "amau", "amis", "bali", "bamb", "beng", "birm",
     "bomb", "bslo", "bsho", "bure", "buri", "cspa", "ctif", "char", "chau", "chee", "csho", "crex",
     "cymr", "cypr", "drex", "dons", "lihu", "emau", "ebur", "esho", "hbro", "hima", "jbob", "java",
@@ -98,5 +104,5 @@ const HELP_MSG: &str = "Small app to fetch cat pics from TheCatAPI
 \x1b[92m\x1b[1mOPTIONS:\x1b[0m
 
     \x1b[96m\x1b[1m-b | --breed\x1b[0m        specify breed to fetch [default: None]
-    \x1b[96m\x1b[1m-c | --count\x1b[0m        number of cats to fetch and download [default: 1]
+    \x1b[96m\x1b[1m-c | --count\x1b[0m        number of cats to fetch and download [Required]
     \x1b[96m\x1b[1m-o | --output\x1b[0m       output directory [default: current working directory]";
