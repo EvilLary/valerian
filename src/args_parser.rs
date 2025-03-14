@@ -2,6 +2,7 @@ use crate::colors::*;
 use crate::ValError;
 use crate::ValResult;
 use std::env;
+use std::io::{self, Write};
 use std::path::PathBuf;
 
 pub struct CmdArgs {
@@ -61,7 +62,7 @@ impl CmdArgs {
                     }
                 }
                 "-bl" | "--breed-list" => {
-                    println!("{:?}", BREED_LIST);
+                    breed_list()?;
                     std::process::exit(0);
                 }
                 "-h" | "--help" => {
@@ -82,6 +83,112 @@ impl CmdArgs {
         }
     }
 }
+
+fn breed_list() -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    writeln!(
+        stdout,
+        "╔ Breed List ════════════════════╦══════════════════════════════════════════════════════╗"
+    )?;
+    writeln!(
+        stdout,
+        "║   ID  ║         NAME           ║                  WIKI URL                            ║"
+    )?;
+    writeln!(
+        stdout,
+        "╠═══════╬════════════════════════╬══════════════════════════════════════════════════════╣"
+    )?;
+    for (i, (id, (name, url))) in BREED_LIST.iter().zip(BREED_INFO).enumerate() {
+        // 20: numbers of characters in the larget name
+        // 51: numbers of characters in the larget url + 1
+        // This is not well designed but This what I've got to get nice formatting
+        let nm_whs = 20 - name.len();
+        let url_whs = 51 - url.len();
+        let color = if i % 2 == 0 { GREEN } else { BLUE };
+        writeln!(
+            stdout,
+            "╠═{color} {id} {RESET}╠═{color} {name}  {RESET}{}╠═{color} {url}{RESET}{} ║",
+            " ".repeat(nm_whs),
+            " ".repeat(url_whs)
+        )?;
+    }
+    writeln!(
+        stdout,
+        "╚═══════╩════════════════════════╩══════════════════════════════════════════════════════╝"
+    )?;
+    Ok(())
+}
+
+#[rustfmt::skip]
+const BREED_INFO: [(&str, &str); 67] = [
+    ("Abyssinian", "https://en.wikipedia.org/wiki/Abyssinian_cat"),
+    ("Aegean", "https://en.wikipedia.org/wiki/Aegean_cat"),
+    ("American Bobtail", "https://en.wikipedia.org/wiki/American_Bobtail"),
+    ("American Curl", "https://en.wikipedia.org/wiki/American_Curl"),
+    ("American Shorthair", "https://en.wikipedia.org/wiki/American_Shorthair"),
+    ("American Wirehair", "https://en.wikipedia.org/wiki/American_Wirehair"),
+    ("Arabian Mau", "https://en.wikipedia.org/wiki/Arabian_Mau"),
+    ("Australian Mist", "https://en.wikipedia.org/wiki/Australian_Mist"),
+    ("Balinese", "https://en.wikipedia.org/wiki/Balinese_(cat)"),
+    ("Bambino", "https://en.wikipedia.org/wiki/Bambino_cat"),
+    ("Bengal", "https://en.wikipedia.org/wiki/Bengal_(cat)"),
+    ("Birman", "https://en.wikipedia.org/wiki/Birman"),
+    ("Bombay", "https://en.wikipedia.org/wiki/Bombay_(cat)"),
+    ("British Longhair", "https://en.wikipedia.org/wiki/British_Longhair"),
+    ("British Shorthair", "https://en.wikipedia.org/wiki/British_Shorthair"),
+    ("Burmese", "https://en.wikipedia.org/wiki/Burmese_(cat)"),
+    ("Burmilla", "https://en.wikipedia.org/wiki/Burmilla"),
+    ("California Spangled", "https://en.wikipedia.org/wiki/California_Spangled"),
+    ("Chantilly-Tiffany", "https://en.wikipedia.org/wiki/Chantilly-Tiffany"),
+    ("Chartreux", "https://en.wikipedia.org/wiki/Chartreux"),
+    ("Chausie", "https://en.wikipedia.org/wiki/Chausie"),
+    ("Chettoh", "https://en.wikipedia.org/wiki/Bengal_cat#Cheetoh"),
+    ("Colorpoint Shorthair", "https://en.wikipedia.org/wiki/Colorpoint_Shorthair"),
+    ("Cornish Rex", "https://en.wikipedia.org/wiki/Cornish_Rex"),
+    ("Cymric", "https://en.wikipedia.org/wiki/Cymric_(cat)"),
+    ("Cyprus", "https://en.wikipedia.org/wiki/Cyprus_cat"),
+    ("Devon Rex", "https://en.wikipedia.org/wiki/Devon_Rex"),
+    ("Donskoy", "https://en.wikipedia.org/wiki/Donskoy_(cat)"),
+    ("Dragon Li", "https://en.wikipedia.org/wiki/Dragon_Li"),
+    ("Egyptian Mau", "https://en.wikipedia.org/wiki/Egyptian_Mau"),
+    ("European Burmese", "https://en.wikipedia.org/wiki/Burmese_cat"),
+    ("Exotic Shorthair", "https://en.wikipedia.org/wiki/Exotic_Shorthair"),
+    ("Havana Brown", "https://en.wikipedia.org/wiki/Havana_Brown"),
+    ("Himalayan", "https://en.wikipedia.org/wiki/Himalayan_(cat)"),
+    ("Japanese Bobtail", "https://en.wikipedia.org/wiki/Japanese_Bobtail"),
+    ("Javanese", "https://en.wikipedia.org/wiki/Javanese_cat"),
+    ("Khao Manee", "https://en.wikipedia.org/wiki/Khao_Manee"),
+    ("Korat", "https://en.wikipedia.org/wiki/Korat"),
+    ("Kurilian", "https://en.wikipedia.org/wiki/Kurilian_Bobtail"),
+    ("LaPerm", "https://en.wikipedia.org/wiki/LaPerm"),
+    ("Maine Coon", "https://en.wikipedia.org/wiki/Maine_Coon"),
+    ("Malayan", "https://en.wikipedia.org/wiki/Asian_cat"),
+    ("Manx", "https://en.wikipedia.org/wiki/Manx_(cat)"),
+    ("Munchkin", "https://en.wikipedia.org/wiki/Munchkin_(cat)"),
+    ("Nebelung", "https://en.wikipedia.org/wiki/Nebelung"),
+    ("Norwegian Forest Cat", "https://en.wikipedia.org/wiki/Norwegian_Forest_Cat"),
+    ("Ocicat", "https://en.wikipedia.org/wiki/Ocicat"),
+    ("Oriental", "https://en.wikipedia.org/wiki/Oriental_Shorthair"),
+    ("Persian", "https://en.wikipedia.org/wiki/Persian_(cat)"),
+    ("Pixie-bob", "https://en.wikipedia.org/wiki/Pixiebob"),
+    ("Ragamuffin", "https://en.wikipedia.org/wiki/Ragamuffin_cat"),
+    ("Ragdoll", "https://en.wikipedia.org/wiki/Ragdoll"),
+    ("Russian Blue", "https://en.wikipedia.org/wiki/Russian_Blue"),
+    ("Savannah", "https://en.wikipedia.org/wiki/Savannah_cat"),
+    ("Scottish Fold", "https://en.wikipedia.org/wiki/Scottish_Fold"),
+    ("Selkirk Rex", "https://en.wikipedia.org/wiki/Selkirk_Rex"),
+    ("Siamese", "https://en.wikipedia.org/wiki/Siamese_(cat)"),
+    ("Siberian", "https://en.wikipedia.org/wiki/Siberian_(cat)"),
+    ("Singapura", "https://en.wikipedia.org/wiki/Singapura_(cat)"),
+    ("Snowshoe", "https://en.wikipedia.org/wiki/Snowshoe_(cat)"),
+    ("Somali", "https://en.wikipedia.org/wiki/Somali_(cat)"),
+    ("Sphynx", "https://en.wikipedia.org/wiki/Sphynx_(cat)"),
+    ("Tokinese", "https://en.wikipedia.org/wiki/Tonkinese_(cat)"),
+    ("Toyger", "https://en.wikipedia.org/wiki/Toyger"),
+    ("Turkish Angora", "https://en.wikipedia.org/wiki/Turkish_Angora"),
+    ("Turkish Van", "https://en.wikipedia.org/wiki/Turkish_Van"),
+    ("York Chocolate", "https://en.wikipedia.org/wiki/York_Chocolate"),
+];
 
 const BREED_LIST: [&str; 67] = [
     "abys", "aege", "abob", "acur", "asho", "awir", "amau", "amis", "bali", "bamb", "beng", "birm",
